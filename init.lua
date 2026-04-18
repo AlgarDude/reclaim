@@ -1,12 +1,13 @@
 -- reclaim by Algar
 -- written in part using Sonnet 4.5
--- Version 1.0
 -- A script to automatically reclaim alt currencies
 -- /lua run reclaim will automatically start the process and exit when finished, broadcast this command as needed.
 
 local mq = require('mq')
 
+local version = "1.1"
 local invWindow = mq.TLO.Window('InventoryWindow')
+local toggledShowAll = false
 
 -- Utility Functions
 local function waitFor(conditionFunc, timeoutMs, checkIntervalMs)
@@ -120,7 +121,27 @@ local function ensureShowAllEnabled()
 
     button.LeftMouseUp()
     mq.delay(100, function() return button.Checked() end)
+    toggledShowAll = true
     return true
+end
+
+local function restoreShowAll()
+    if not toggledShowAll then
+        return
+    end
+
+    local button = invWindow.Child('IW_AltCurr_DisplayMissingButton')
+
+    if not button or not button() then
+        return
+    end
+
+    if not button.Checked() then
+        return
+    end
+
+    button.LeftMouseUp()
+    mq.delay(100, function() return not button.Checked() end)
 end
 
 -- Currency Reclaim
@@ -175,7 +196,7 @@ end
 -- Main Execution
 
 local function main()
-    print("Reclaim: Alt-Currency Reclaim Initiated")
+    printf("Reclaim v%s: Alt-Currency Reclaim Initiated.", version)
 
     if not openInventoryWindow() then
         return
@@ -194,6 +215,8 @@ local function main()
     mq.delay(200) -- Allow list to repopulate after show all
 
     local count = reclaimAllCurrencies()
+
+    restoreShowAll()
 
     closeInventoryWindow()
 
